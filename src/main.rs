@@ -13,9 +13,8 @@ use colored::*;
 
 
 #[derive(Parser, Debug)]
-#[command(name = "minecraft_server_pinger")]
-#[command(author = "Your Name")]
-#[command(version = "1.0")]
+#[command(name = "rustcraft")]
+#[command(version = "1.0.1")]
 #[command(about = "Pings a Minecraft server and retrieves information", long_about = None)]
 struct Args {
     /// Hostname of the Minecraft server
