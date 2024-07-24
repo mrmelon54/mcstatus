@@ -1,7 +1,5 @@
-use std::net::TcpStream;
-use std::env;
-use std::process;
-use std::io::{Read, Write};
+﻿use std::net::TcpStream;
+use std::io::{self, Read, Write};
 use std::convert::TryInto;
 use std::fmt;
 use base64::engine::general_purpose::STANDARD;
@@ -9,6 +7,29 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::Resolver;
+use clap::Parser;
+use colored::*;
+
+
+
+#[derive(Parser, Debug)]
+#[command(name = "minecraft_server_pinger")]
+#[command(author = "Your Name")]
+#[command(version = "1.0")]
+#[command(about = "Pings a Minecraft server and retrieves information", long_about = None)]
+struct Args {
+    /// Hostname of the Minecraft server
+    #[arg(long)]
+    hostname: Option<String>,
+
+    /// Port of the Minecraft server
+    #[arg(long)]
+    port: Option<u16>,
+
+    /// Enable verbose output
+    #[arg(long)]
+    verbose: bool,
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -387,7 +408,7 @@ fn resolve_srv(hostname: &str, port: u16) -> (String, u16) {
     match resolver.srv_lookup(srv_query) {
         Ok(srv_records) => {
             if let Some(srv) = srv_records.iter().next() {
-                println!("SRV record found. Redirecting to {}:{}", srv.target().to_ascii(), srv.port());
+                println!("{} {}:{}", "SRV record found. Redirecting to", srv.target().to_ascii(), srv.port());
                 (srv.target().to_ascii(), srv.port())
             } else {
                 println!("No SRV record found. Using original hostname and port.");
@@ -401,57 +422,98 @@ fn resolve_srv(hostname: &str, port: u16) -> (String, u16) {
     }
 }
 
+
+fn print_title() {
+    println!("{}", "rustcraft".bold().truecolor(210, 105, 30));
+    println!("{}", "A Minecraft Server Pinger".italic().white());
+    println!("{}", "=".repeat(30).truecolor(210, 105, 30));
+}
+
+fn print_section(title: &str) {
+    println!("\n{}", title.bold().underline().truecolor(210, 105, 30));
+}
+
+fn print_info(label: &str, value: &str) {
+    control::set_virtual_terminal(true).unwrap();
+    println!("{}: {}", label.truecolor(210, 105, 30), value.white());
+}
+
+fn prompt_input(prompt: &str) -> String {
+    print!("{}", prompt.truecolor(210, 105, 30));
+    io::stdout().flush().unwrap();
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    input.trim().to_string()
+}
+
+
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        eprintln!("Usage: {} <hostname> <port>", args[0]);
-        process::exit(1);
+    print_title();
+
+    let mut args = Args::parse();
+
+    if args.hostname.is_none() {
+        args.hostname = Some(prompt_input("Enter server hostname: "));
     }
 
-    let hostname = &args[1];
-    let port: u16 = match args[2].parse() {
-        Ok(port) => port,
-        Err(_) => {
-            eprintln!("Invalid port number");
-            process::exit(1);
-        }
-    };
+    if args.port.is_none() {
+        let port_input = prompt_input("Enter server port (default 25565): ");
+        args.port = port_input.parse().ok().or(Some(25565));
+    }
 
-    println!("Resolving SRV record for {}:{}", hostname, port);
-    let (resolved_hostname, resolved_port) = resolve_srv(hostname, port);
+    let hostname = args.hostname.unwrap();
+    let port = args.port.unwrap();
 
-    println!("Attempting to ping {}:{}", resolved_hostname, resolved_port);
+    if args.verbose {
+        print_info("Resolving SRV record for", &format!("{}:{}", hostname, port));
+    }
+    let (resolved_hostname, resolved_port) = resolve_srv(&hostname, port);
+
+    if args.verbose {
+        print_info("Attempting to ping", &format!("{}:{}", resolved_hostname, resolved_port));
+    }
 
     match TcpStream::connect((resolved_hostname.as_str(), resolved_port)) {
         Ok(mut stream) => {
-            println!("Connected to server. Attempting to ping...");
+            if args.verbose {
+                println!("{}", "Connected to server. Attempting to ping...".green());
+            }
             match ping(&mut stream, &resolved_hostname, resolved_port) {
                 Ok(response) => {
-                    println!("Server version: {}", response.version);
-                    println!("Protocol: {}", response.protocol);
-                    println!("Max players: {}", response.max_players);
-                    println!("Online players: {}", response.online_players);
-                    println!("Description: {:?}", response.description);
+                    print_section("Server Information");
+                    print_info("Server version", &response.version);
+                    print_info("Protocol", &response.protocol.to_string());
+                    print_info("Max players", &response.max_players.to_string());
+                    print_info("Online players", &response.online_players.to_string());
+                    print_info("Description", &format!("{:?}", response.description));
+                    
                     if let Some(mod_info) = response.mod_info {
-                        println!("Mod type: {}", mod_info.mod_type);
-                        println!("Mods: {:?}", mod_info.mod_list);
+                        print_section("Mod Information");
+                        print_info("Mod type", &mod_info.mod_type);
+                        print_info("Mods", &format!("{:?}", mod_info.mod_list));
                     }
+                    
                     if let Some(forge_data) = response.forge_data {
-                        println!("Forge network version: {}", forge_data.fml_network_version);
-                        println!("Forge mods: {:?}", forge_data.mods);
+                        print_section("Forge Information");
+                        print_info("Forge network version", &forge_data.fml_network_version.to_string());
+                        print_info("Forge mods", &format!("{:?}", forge_data.mods));
                     }
                 }
                 Err(Error::UnsupportedProtocol) => {
-                    eprintln!("The server is using an unsupported protocol version.");
-                    eprintln!("This could be because the server is running a very old or very new version of Minecraft.");
+                    eprintln!("{}", "The server is using an unsupported protocol version.".red());
+                    eprintln!("{}", "This could be because the server is running a very old or very new version of Minecraft.".yellow());
                 }
                 Err(e) => {
-                    eprintln!("Error pinging server: {}", e);
+                    eprintln!("{}", format!("Error pinging server: {}", e).red());
                 }
             }
         }
         Err(e) => {
-            eprintln!("Failed to connect to server: {}", e);
+            eprintln!("{}", format!("Failed to connect to server: {}", e).red());
         }
     }
+
+    println!("\n{}", "Press Enter to exit...".italic().white());
+    let mut _input = String::new();
+    io::stdin().read_line(&mut _input).unwrap();
 }
