@@ -1,16 +1,14 @@
-﻿use std::net::TcpStream;
-use std::io::{self, Read, Write};
-use std::convert::TryInto;
-use std::fmt;
-use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
-use serde::{Deserialize, Serialize};
-use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
-use trust_dns_resolver::Resolver;
+use base64::engine::general_purpose::STANDARD;
 use clap::Parser;
 use colored::*;
-
-
+use serde::{Deserialize, Serialize};
+use std::convert::TryInto;
+use std::fmt;
+use std::io::{self, Read, Write};
+use std::net::TcpStream;
+use trust_dns_resolver::Resolver;
+use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 
 #[derive(Parser, Debug)]
 #[command(name = "mcstatus")]
@@ -32,7 +30,7 @@ struct Args {
 
 #[derive(Debug)]
 pub enum Error {
-    Io(std::io::Error),
+    Io(io::Error),
     UnsupportedProtocol,
 }
 
@@ -47,8 +45,8 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<std::io::Error> for Error {
-    fn from(error: std::io::Error) -> Self {
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
         Self::Io(error)
     }
 }
@@ -260,28 +258,14 @@ fn write_varint(sink: &mut Vec<u8>, mut value: i32) {
 }
 
 fn build_latest_request(hostname: &str, port: u16) -> Result<Vec<u8>> {
-    let mut buffer = vec![
-        0x00,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0x0f,
-    ];
+    let mut buffer = vec![0x00, 0xff, 0xff, 0xff, 0xff, 0x0f];
     write_varint(&mut buffer, hostname.len() as i32);
     buffer.extend_from_slice(hostname.as_bytes());
-    buffer.extend_from_slice(&[
-        (port >> 8) as u8,
-        (port & 0b1111_1111) as u8,
-        0x01,
-    ]);
+    buffer.extend_from_slice(&[(port >> 8) as u8, (port & 0b1111_1111) as u8, 0x01]);
     let mut full_buffer = vec![];
     write_varint(&mut full_buffer, buffer.len() as i32);
     full_buffer.append(&mut buffer);
-    full_buffer.extend_from_slice(&[
-        1,
-        0x00,
-    ]);
+    full_buffer.extend_from_slice(&[1, 0x00]);
     Ok(full_buffer)
 }
 
@@ -407,7 +391,12 @@ fn resolve_srv(hostname: &str, port: u16) -> (String, u16) {
     match resolver.srv_lookup(srv_query) {
         Ok(srv_records) => {
             if let Some(srv) = srv_records.iter().next() {
-                println!("{} {}:{}", "SRV record found. Redirecting to", srv.target().to_ascii(), srv.port());
+                println!(
+                    "{} {}:{}",
+                    "SRV record found. Redirecting to",
+                    srv.target().to_ascii(),
+                    srv.port()
+                );
                 (srv.target().to_ascii(), srv.port())
             } else {
                 println!("No SRV record found. Using original hostname and port.");
@@ -447,7 +436,6 @@ fn prompt_input(prompt: &str) -> String {
     input.trim().to_string()
 }
 
-
 fn main() {
     print_title();
 
@@ -466,12 +454,18 @@ fn main() {
     let port = args.port.unwrap();
 
     if args.verbose {
-        print_info("Resolving SRV record for", &format!("{}:{}", hostname, port));
+        print_info(
+            "Resolving SRV record for",
+            &format!("{}:{}", hostname, port),
+        );
     }
     let (resolved_hostname, resolved_port) = resolve_srv(&hostname, port);
 
     if args.verbose {
-        print_info("Attempting to ping", &format!("{}:{}", resolved_hostname, resolved_port));
+        print_info(
+            "Attempting to ping",
+            &format!("{}:{}", resolved_hostname, resolved_port),
+        );
     }
 
     match TcpStream::connect((resolved_hostname.as_str(), resolved_port)) {
@@ -487,21 +481,27 @@ fn main() {
                     print_info("Max players", &response.max_players.to_string());
                     print_info("Online players", &response.online_players.to_string());
                     print_info("Description", &format!("{:?}", response.description));
-                    
+
                     if let Some(mod_info) = response.mod_info {
                         print_section("Mod Information");
                         print_info("Mod type", &mod_info.mod_type);
                         print_info("Mods", &format!("{:?}", mod_info.mod_list));
                     }
-                    
+
                     if let Some(forge_data) = response.forge_data {
                         print_section("Forge Information");
-                        print_info("Forge network version", &forge_data.fml_network_version.to_string());
+                        print_info(
+                            "Forge network version",
+                            &forge_data.fml_network_version.to_string(),
+                        );
                         print_info("Forge mods", &format!("{:?}", forge_data.mods));
                     }
                 }
                 Err(Error::UnsupportedProtocol) => {
-                    eprintln!("{}", "The server is using an unsupported protocol version.".red());
+                    eprintln!(
+                        "{}",
+                        "The server is using an unsupported protocol version.".red()
+                    );
                     eprintln!("{}", "This could be because the server is running a very old or very new version of Minecraft.".yellow());
                 }
                 Err(e) => {
