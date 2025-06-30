@@ -27,10 +27,10 @@ A Rust-based command-line tool for querying Minecraft server status.
 
 4. Run mcstatus:
    ```
-   ./target/release/rustcraft <hostname> <port>
+   ./target/release/mcstatus <hostname> -p <port>
    ```
 
    Example:
    ```
-   ./target/release/rustcraft mc.example.com 25565
+   ./target/release/mcstatus mc.example.com -p 25565
    ```

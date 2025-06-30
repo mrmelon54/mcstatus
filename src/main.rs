@@ -20,8 +20,8 @@ struct Args {
     hostname: Option<String>,
 
     /// Port of the Minecraft server
-    #[arg(long)]
-    port: Option<u16>,
+    #[arg(long, short, default_value = "25565")]
+    port: u16,
 
     /// Enable verbose output
     #[arg(long)]
@@ -446,13 +446,8 @@ fn main() {
         args.hostname = Some(prompt_input("Enter server hostname: "));
     }
 
-    if args.port.is_none() {
-        let port_input = prompt_input("Enter server port (default 25565): ");
-        args.port = port_input.parse().ok().or(Some(25565));
-    }
-
     let hostname = args.hostname.unwrap();
-    let port = args.port.unwrap();
+    let port = args.port;
 
     if args.verbose {
         print_info(
