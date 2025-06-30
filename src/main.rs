@@ -440,7 +440,7 @@ fn prompt_input(prompt: &str) -> String {
 fn main() {
     print_title();
 
-    let mut args = Args::parse();
+    let args = Args::parse();
 
     let hostname = args.hostname;
     let port = args.port;
