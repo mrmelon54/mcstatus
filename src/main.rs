@@ -429,14 +429,6 @@ fn print_info(label: &str, value: &str) {
     println!("{}: {}", label.truecolor(210, 105, 30), value.white());
 }
 
-fn prompt_input(prompt: &str) -> String {
-    print!("{}", prompt.truecolor(210, 105, 30));
-    io::stdout().flush().unwrap();
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-    input.trim().to_string()
-}
-
 fn main() {
     print_title();
 
