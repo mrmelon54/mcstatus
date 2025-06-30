@@ -1,7 +1,7 @@
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use clap::Parser;
-use colored::*;
+use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::fmt;
