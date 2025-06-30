@@ -24,7 +24,7 @@ struct Args {
     port: u16,
 
     /// Enable verbose output
-    #[arg(long)]
+    #[arg(long, short)]
     verbose: bool,
 }
 
