@@ -424,6 +424,7 @@ fn print_section(title: &str) {
 }
 
 fn print_info(label: &str, value: &str) {
+    #[cfg(target_os = "windows")]
     control::set_virtual_terminal(true).unwrap();
     println!("{}: {}", label.truecolor(210, 105, 30), value.white());
 }
