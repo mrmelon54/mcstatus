@@ -20,8 +20,8 @@ struct Args {
     hostname: String,
 
     /// Port of the Minecraft server
-    #[arg(long, short, default_value = "25565")]
-    port: u16,
+    #[arg(long, short)]
+    port: Option<u16>,
 
     /// Enable verbose output
     #[arg(long, short)]
@@ -383,7 +383,7 @@ where
     ping_latest(stream, hostname, port).or_else(|_| ping_legacy(stream))
 }
 
-fn resolve_srv(hostname: &str, port: u16) -> (String, u16) {
+fn resolve_srv(hostname: String) -> Option<(String, u16)> {
     let resolver = Resolver::new(ResolverConfig::default(), ResolverOpts::default())
         .expect("Failed to create DNS resolver");
 
@@ -396,15 +396,15 @@ fn resolve_srv(hostname: &str, port: u16) -> (String, u16) {
                     srv.target().to_ascii(),
                     srv.port()
                 );
-                (srv.target().to_ascii(), srv.port())
+                Some((srv.target().to_ascii(), srv.port()))
             } else {
                 println!("No SRV record found. Using original hostname and port.");
-                (hostname.to_string(), port)
+                None
             }
         }
         Err(e) => {
             println!("Error looking up SRV record: {e}. Using original hostname and port.");
-            (hostname.to_string(), port)
+            None
         }
     }
 }
@@ -430,27 +430,34 @@ fn main() {
 
     let args = Args::parse();
 
-    let hostname = args.hostname;
-    let port = args.port;
+    let mut hostname = args.hostname;
+    let mut port = args.port;
+
+    // Only attempt SRV records if the port is not set
+    // The user is probably trying to override automatic resolving otherwise
+    if port.is_none() {
+        if args.verbose {
+            print_info("Resolving SRV record for", &format!("{hostname}"));
+        }
+        // Update the hostname and port if an SRV record is found
+        if let Some((hostname1, port1)) = resolve_srv(hostname.clone()) {
+            hostname = hostname1;
+            port = Some(port1);
+        }
+    }
+
+    let resolved_port = port.unwrap_or(25565);
 
     if args.verbose {
-        print_info("Resolving SRV record for", &format!("{hostname}:{port}"));
-    }
-    let (resolved_hostname, resolved_port) = resolve_srv(&hostname, port);
-
-    if args.verbose {
-        print_info(
-            "Attempting to ping",
-            &format!("{resolved_hostname}:{resolved_port}"),
-        );
+        print_info("Attempting to ping", &format!("{hostname}:{resolved_port}"));
     }
 
-    match TcpStream::connect((resolved_hostname.as_str(), resolved_port)) {
+    match TcpStream::connect((hostname.as_str(), resolved_port)) {
         Ok(mut stream) => {
             if args.verbose {
                 println!("{}", "Connected to server. Attempting to ping...".green());
             }
-            match ping(&mut stream, &resolved_hostname, resolved_port) {
+            match ping(&mut stream, &hostname, resolved_port) {
                 Ok(response) => {
                     print_section("Server Information");
                     print_info("Server version", &response.version);
