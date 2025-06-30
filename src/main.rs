@@ -224,7 +224,7 @@ impl fmt::Debug for Chat {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let text = self.text.replace("\n", "");
         let text = text.split_whitespace().collect::<Vec<&str>>().join(" ");
-        write!(f, "{}", text)?;
+        write!(f, "{text}")?;
         for extra in &self.extra {
             write!(f, "{:?}", extra.clone())?;
         }
@@ -387,13 +387,12 @@ fn resolve_srv(hostname: &str, port: u16) -> (String, u16) {
     let resolver = Resolver::new(ResolverConfig::default(), ResolverOpts::default())
         .expect("Failed to create DNS resolver");
 
-    let srv_query = format!("_minecraft._tcp.{}", hostname);
+    let srv_query = format!("_minecraft._tcp.{hostname}");
     match resolver.srv_lookup(srv_query) {
         Ok(srv_records) => {
             if let Some(srv) = srv_records.iter().next() {
                 println!(
-                    "{} {}:{}",
-                    "SRV record found. Redirecting to",
+                    "SRV record found. Redirecting to {}:{}",
                     srv.target().to_ascii(),
                     srv.port()
                 );
@@ -404,10 +403,7 @@ fn resolve_srv(hostname: &str, port: u16) -> (String, u16) {
             }
         }
         Err(e) => {
-            println!(
-                "Error looking up SRV record: {}. Using original hostname and port.",
-                e
-            );
+            println!("Error looking up SRV record: {e}. Using original hostname and port.");
             (hostname.to_string(), port)
         }
     }
@@ -438,17 +434,14 @@ fn main() {
     let port = args.port;
 
     if args.verbose {
-        print_info(
-            "Resolving SRV record for",
-            &format!("{}:{}", hostname, port),
-        );
+        print_info("Resolving SRV record for", &format!("{hostname}:{port}"));
     }
     let (resolved_hostname, resolved_port) = resolve_srv(&hostname, port);
 
     if args.verbose {
         print_info(
             "Attempting to ping",
-            &format!("{}:{}", resolved_hostname, resolved_port),
+            &format!("{resolved_hostname}:{resolved_port}"),
         );
     }
 
@@ -489,12 +482,12 @@ fn main() {
                     eprintln!("{}", "This could be because the server is running a very old or very new version of Minecraft.".yellow());
                 }
                 Err(e) => {
-                    eprintln!("{}", format!("Error pinging server: {}", e).red());
+                    eprintln!("{}", format!("Error pinging server: {e}").red());
                 }
             }
         }
         Err(e) => {
-            eprintln!("{}", format!("Failed to connect to server: {}", e).red());
+            eprintln!("{}", format!("Failed to connect to server: {e}").red());
         }
     }
 
