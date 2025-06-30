@@ -384,6 +384,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffbee8634e0d45d258acb448e7eaab3fce7a0a467395d4d9f228e3c1f01fb2e4"
 
 [[package]]
+name = "mcstatus"
+version = "2.0.0"
+dependencies = [
+ "base64",
+ "clap",
+ "colored",
+ "serde",
+ "serde_json",
+ "trust-dns-resolver",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -559,18 +571,6 @@ name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "719b953e2095829ee67db738b3bfa9fa368c94900df327b3f07fe6e794d2fe1f"
-
-[[package]]
-name = "rustcraft"
-version = "1.0.1"
-dependencies = [
- "base64",
- "clap",
- "colored",
- "serde",
- "serde_json",
- "trust-dns-resolver",
-]
 
 [[package]]
 name = "ryu"

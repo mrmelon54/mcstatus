@@ -13,8 +13,8 @@ use colored::*;
 
 
 #[derive(Parser, Debug)]
-#[command(name = "rustcraft")]
-#[command(version = "1.0.1")]
+#[command(name = "mcstatus")]
+#[command(version = "2.0.0")]
 #[command(about = "Pings a Minecraft server and retrieves information", long_about = None)]
 struct Args {
     /// Hostname of the Minecraft server
@@ -415,15 +415,17 @@ fn resolve_srv(hostname: &str, port: u16) -> (String, u16) {
             }
         }
         Err(e) => {
-            println!("Error looking up SRV record: {}. Using original hostname and port.", e);
+            println!(
+                "Error looking up SRV record: {}. Using original hostname and port.",
+                e
+            );
             (hostname.to_string(), port)
         }
     }
 }
 
-
 fn print_title() {
-    println!("{}", "rustcraft".bold().truecolor(210, 105, 30));
+    println!("{}", "mcstatus".bold().truecolor(210, 105, 30));
     println!("{}", "A Minecraft Server Pinger".italic().white());
     println!("{}", "=".repeat(30).truecolor(210, 105, 30));
 }
