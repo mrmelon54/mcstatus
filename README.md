@@ -30,6 +30,8 @@ A Rust-based command-line tool for querying Minecraft server status.
    ./target/release/mcstatus <hostname> -p <port>
    ```
 
+   The port will be discovered using SRV records, or default to 25565.
+
    Example:
    ```
    ./target/release/mcstatus mc.example.com -p 25565
