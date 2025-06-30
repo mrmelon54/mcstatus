@@ -16,8 +16,8 @@ use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 #[command(about = "Pings a Minecraft server and retrieves information", long_about = None)]
 struct Args {
     /// Hostname of the Minecraft server
-    #[arg(long)]
-    hostname: Option<String>,
+    #[arg()]
+    hostname: String,
 
     /// Port of the Minecraft server
     #[arg(long, short, default_value = "25565")]
@@ -442,11 +442,7 @@ fn main() {
 
     let mut args = Args::parse();
 
-    if args.hostname.is_none() {
-        args.hostname = Some(prompt_input("Enter server hostname: "));
-    }
-
-    let hostname = args.hostname.unwrap();
+    let hostname = args.hostname;
     let port = args.port;
 
     if args.verbose {
