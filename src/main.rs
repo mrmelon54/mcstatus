@@ -498,6 +498,12 @@ fn main() {
         }
     }
 
+    #[cfg(target_os = "windows")]
+    enter_to_exit();
+}
+
+#[cfg(target_os = "windows")]
+fn enter_to_exit() {
     println!("\n{}", "Press Enter to exit...".italic().white());
     let mut _input = String::new();
     io::stdin().read_line(&mut _input).unwrap();
